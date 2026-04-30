@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:confetti/confetti.dart';
-import 'dart:io';
 import 'dart:math';
+import 'dart:io';
+import 'package:confetti/confetti.dart';
+import '../models/level.dart';
 import '../services/arasaac_service.dart';
 import '../services/audio_service.dart';
-import '../models/pictogram.dart';
-import '../models/level.dart';
 
 class CountingScreen extends StatefulWidget {
+
   final GameLevel level;
   const CountingScreen({super.key, required this.level});
 
@@ -200,7 +200,8 @@ class _CountingScreenState extends State<CountingScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(30),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                            boxShadow: [BoxShadow(                      color: Colors.black.withValues(alpha: 0.05),
+ blurRadius: 10)],
                           ),
                           child: Center(
                             child: SingleChildScrollView(
@@ -275,7 +276,7 @@ class _CountingScreenState extends State<CountingScreen> {
           ),
           borderRadius: BorderRadius.circular(btnSize * 0.25),
           boxShadow: [
-            BoxShadow(color: Colors.blue.withOpacity(0.3), offset: const Offset(0, 6), blurRadius: 8)
+            BoxShadow(color: Colors.blue.withValues(alpha: 0.3), offset: const Offset(0, 6), blurRadius: 8)
           ],
         ),
         child: Center(

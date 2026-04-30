@@ -122,8 +122,13 @@ class _LevelSelectionScreenState extends State<LevelSelectionScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(40),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10))
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        )
                       ],
+
                       border: Border.all(color: Colors.blue.shade100, width: 2),
                     ),
                     child: Column(
