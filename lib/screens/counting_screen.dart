@@ -26,6 +26,7 @@ class _CountingScreenState extends State<CountingScreen> {
   String? _mainImageUrl;
   String? _rewardImageUrl;
   bool _isLoading = true;
+  bool _showError = false;
   
   int _currentRound = 1;
   final int _totalRounds = 3;
@@ -104,7 +105,14 @@ class _CountingScreenState extends State<CountingScreen> {
     }
   }
 
-  void _handleIncorrect() {}
+  void _handleIncorrect() {
+    setState(() => _showError = true);
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        setState(() => _showError = false);
+      }
+    });
+  }
 
   void _showRewardDialog() {
     showDialog(
@@ -245,6 +253,19 @@ class _CountingScreenState extends State<CountingScreen> {
                   colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple],
                 ),
               ),
+
+              // Overlay de Error (X Roja)
+              if (_showError)
+                Container(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  child: const Center(
+                    child: Icon(
+                      Icons.close,
+                      color: Colors.red,
+                      size: 300,
+                    ),
+                  ),
+                ),
             ],
           );
         }

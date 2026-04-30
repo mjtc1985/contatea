@@ -65,7 +65,7 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/audio/applause.mp3
+    - assets/audio/success.wav
 
   # To add assets to your application, add an assets section, like this:
   # assets:

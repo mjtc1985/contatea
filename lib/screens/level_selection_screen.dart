@@ -31,51 +31,6 @@ class _LevelSelectionScreenState extends State<LevelSelectionScreen> {
     }
   }
 
-  void _showParentalGate(GameLevel level) {
-    final random = Random();
-    int a = 5 + random.nextInt(10);
-    int b = 2 + random.nextInt(10);
-    int result = a + b;
-    TextEditingController controller = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Control Parental'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Solo para adultos. Resuelve: $a + $b = ?'),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              autofocus: true,
-              onSubmitted: (_) => _verifyGate(controller, result, level),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => _verifyGate(controller, result, level),
-            child: const Text('Entrar'),
-          )
-        ],
-      ),
-    );
-  }
-
-  void _verifyGate(TextEditingController controller, int result, GameLevel level) {
-    if (controller.text == result.toString()) {
-      Navigator.pop(context);
-      _openSettings(level);
-    } else {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Incorrecto')),
-      );
-    }
-  }
-
   void _openSettings(GameLevel level) async {
     await Navigator.push(
       context,
@@ -154,7 +109,7 @@ class _LevelSelectionScreenState extends State<LevelSelectionScreen> {
                   right: 20,
                   child: IconButton(
                     icon: const Icon(Icons.settings, color: Colors.blueGrey, size: 30),
-                    onPressed: () => _showParentalGate(level),
+                    onPressed: () => _openSettings(level),
                   ),
                 ),
               ],
