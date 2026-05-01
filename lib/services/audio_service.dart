@@ -18,6 +18,10 @@ class AudioService {
     }
   }
 
+  Future<void> playVictory() async => playApplause();
+  Future<void> playSuccess() async => playApplause();
+  Future<void> playError() async {}
+
   Future<void> playApplause() async {
     debugPrint('Solicitando audio de aplauso...');
     try {

@@ -7,7 +7,6 @@ import '../services/arasaac_service.dart';
 import '../services/audio_service.dart';
 
 class CountingScreen extends StatefulWidget {
-
   final GameLevel level;
   const CountingScreen({super.key, required this.level});
 
@@ -22,18 +21,20 @@ class _CountingScreenState extends State<CountingScreen> {
   final Random _random = Random();
   
   int _targetNumber = 0;
+  final List<int> _numberBag = [];
   List<int> _options = [];
   String? _mainImageUrl;
   String? _rewardImageUrl;
   bool _isLoading = true;
   bool _showError = false;
   
-  int _currentRound = 1;
-  final int _totalRounds = 3;
+  int _currentRound = 0;
+  late int _totalRounds;
 
   @override
   void initState() {
     super.initState();
+    _totalRounds = widget.level.totalRounds;
     _confettiController = ConfettiController(duration: const Duration(seconds: 2));
     _loadData();
   }
@@ -46,12 +47,10 @@ class _CountingScreenState extends State<CountingScreen> {
 
   Future<void> _loadData() async {
     try {
-      // Priorizar URLs seleccionadas manualmente en ajustes
       _mainImageUrl = widget.level.selectedPictogramUrl;
       _rewardImageUrl = widget.level.rewardPictogramUrl;
 
-      // Si no hay URL seleccionada, buscamos por query (comportamiento por defecto)
-      if (_mainImageUrl == null) {
+      if (_mainImageUrl == null && widget.level.selectedLocalImagePath == null) {
         final results = await _arasaacService.searchPictograms(widget.level.query);
         if (results.isNotEmpty) _mainImageUrl = results.first.imageUrl;
       }
@@ -74,7 +73,21 @@ class _CountingScreenState extends State<CountingScreen> {
 
   void _generateNewChallenge() {
     setState(() {
-      _targetNumber = _random.nextInt(widget.level.targetCount) + 1;
+      // Si la bolsa está vacía, la llenamos con números del 1 al targetCount y mezclamos
+      if (_numberBag.isEmpty) {
+        final List<int> pool = List.generate(widget.level.targetCount, (i) => i + 1);
+        pool.shuffle();
+        
+        // Evitar que el primero de la nueva tanda sea igual al último de la anterior
+        if (_targetNumber != 0 && pool.length > 1 && pool.first == _targetNumber) {
+          final first = pool.removeAt(0);
+          pool.add(first);
+        }
+        _numberBag.addAll(pool);
+      }
+
+      _targetNumber = _numberBag.removeAt(0);
+      
       _options = [_targetNumber];
       while (_options.length < 3) {
         int wrong = _random.nextInt(widget.level.targetCount) + 1;
@@ -95,22 +108,22 @@ class _CountingScreenState extends State<CountingScreen> {
   }
 
   void _handleCorrect() {
+    setState(() => _currentRound++);
     if (_currentRound < _totalRounds) {
-      setState(() => _currentRound++);
+      _audioService.playSuccess();
       _generateNewChallenge();
     } else {
-      _audioService.playApplause();
+      _audioService.playVictory();
       _confettiController.play();
       _showRewardDialog();
     }
   }
 
   void _handleIncorrect() {
+    _audioService.playError();
     setState(() => _showError = true);
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (mounted) {
-        setState(() => _showError = false);
-      }
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) setState(() => _showError = false);
     });
   }
 
@@ -120,7 +133,7 @@ class _CountingScreenState extends State<CountingScreen> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-        title: const Text('¡CAMPEÓN!', textAlign: TextAlign.center, style: TextStyle(fontSize: 30, color: Colors.orange, fontWeight: FontWeight.bold)),
+        title: const Text('¡BIEN!', textAlign: TextAlign.center, style: TextStyle(fontSize: 30, color: Colors.orange, fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -131,20 +144,23 @@ class _CountingScreenState extends State<CountingScreen> {
         ),
         actions: [
           Center(
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _currentRound = 0;
+                    _numberBag.clear();
+                  });
+                  _generateNewChallenge();
+                },
+                child: const Text('¡Jugar otra vez!', style: TextStyle(fontSize: 22)),
               ),
-              onPressed: () {
-                Navigator.pop(context);
-                setState(() => _currentRound = 1);
-                _generateNewChallenge();
-              },
-              child: const Text('¡Jugar otra vez!', style: TextStyle(fontSize: 22)),
-            ),
           ),
           const SizedBox(height: 10),
         ],
@@ -153,7 +169,7 @@ class _CountingScreenState extends State<CountingScreen> {
   }
 
   Widget _buildRewardImage() {
-    if (widget.level.rewardImagePath != null) {
+    if (widget.level.rewardImagePath != null && File(widget.level.rewardImagePath!).existsSync()) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: Image.file(File(widget.level.rewardImagePath!), width: 180, height: 180, fit: BoxFit.cover),
@@ -183,24 +199,16 @@ class _CountingScreenState extends State<CountingScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : Column(
                     children: [
-                      // Progreso
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(_totalRounds, (index) => Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 6),
-                            width: constraints.maxWidth * 0.1,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: index < _currentRound ? Colors.green : Colors.grey[300],
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                          )),
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        child: LinearProgressIndicator(
+                          value: _currentRound / _totalRounds,
+                          minHeight: 20,
+                          backgroundColor: Colors.grey[300],
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-
-                      // Área de Pictogramas (Responsiva)
                       Expanded(
                         child: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -208,32 +216,27 @@ class _CountingScreenState extends State<CountingScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(30),
-                            boxShadow: [BoxShadow(                      color: Colors.black.withValues(alpha: 0.05),
- blurRadius: 10)],
+                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
                           ),
                           child: Center(
                             child: SingleChildScrollView(
                               child: Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
+                                spacing: 20,
+                                runSpacing: 20,
                                 alignment: WrapAlignment.center,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: List.generate(_targetNumber, (index) => 
-                                  _mainImageUrl != null 
-                                    ? Image.network(_mainImageUrl!, width: _calculateImageSize(constraints), height: _calculateImageSize(constraints))
-                                    : const Icon(Icons.help_outline),
+                                  _buildCountingItem(constraints),
                                 ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                      
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 20),
                         child: Text('¿Cuántos hay?', style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
                       ),
-
-                      // Botones de Opciones
                       Padding(
                         padding: const EdgeInsets.only(bottom: 30),
                         child: Row(
@@ -243,7 +246,6 @@ class _CountingScreenState extends State<CountingScreen> {
                       ),
                     ],
                   ),
-              
               Align(
                 alignment: Alignment.topCenter,
                 child: ConfettiWidget(
@@ -253,8 +255,6 @@ class _CountingScreenState extends State<CountingScreen> {
                   colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple],
                 ),
               ),
-
-              // Overlay de Error (X Roja)
               if (_showError)
                 Container(
                   color: Colors.white.withValues(alpha: 0.8),
@@ -273,16 +273,24 @@ class _CountingScreenState extends State<CountingScreen> {
     );
   }
 
-  double _calculateImageSize(BoxConstraints constraints) {
-    // Ajuste dinámico del tamaño de los pictogramas según la cantidad
-    if (_targetNumber <= 3) return 120;
-    if (_targetNumber <= 6) return 90;
-    return 70;
+  Widget _buildCountingItem(BoxConstraints constraints) {
+    double size = (constraints.maxWidth - 60) / (_targetNumber <= 4 ? 2.2 : 3.5);
+    size = size.clamp(80.0, 200.0);
+    
+    if (widget.level.selectedLocalImagePath != null && File(widget.level.selectedLocalImagePath!).existsSync()) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Image.file(File(widget.level.selectedLocalImagePath!), width: size, height: size, fit: BoxFit.cover),
+      );
+    }
+    if (_mainImageUrl != null) {
+      return Image.network(_mainImageUrl!, width: size, height: size);
+    }
+    return const Icon(Icons.help_outline);
   }
 
   Widget _buildOptionButton(int number, BoxConstraints constraints) {
-    double btnSize = constraints.maxWidth * 0.22;
-    if (btnSize > 120) btnSize = 120;
+    double btnSize = (constraints.maxWidth * 0.22).clamp(0.0, 120.0);
 
     return GestureDetector(
       onTap: () => _onOptionSelected(number),
@@ -307,7 +315,6 @@ class _CountingScreenState extends State<CountingScreen> {
               fontSize: btnSize * 0.45, 
               color: Colors.white, 
               fontWeight: FontWeight.bold,
-              shadows: const [Shadow(color: Colors.black26, blurRadius: 2, offset: Offset(0, 2))],
             ),
           ),
         ),
