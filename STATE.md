@@ -24,3 +24,6 @@
 | Fix Example Data & Progress Bar Top | 2026-05-01 | complete ✓ |
 | Advanced Randomization & Word Selection | 2026-05-01 | complete ✓ |
 | Fixed Persistent Button Shading | 2026-05-01 | complete ✓ |
+| Responsive UI & Layout Optimization | 2026-05-01 | complete ✓ |
+| Global Sound Toggle & Persistence | 2026-05-01 | complete ✓ |
+| License (MIT) & README documentation | 2026-05-01 | complete ✓ |
