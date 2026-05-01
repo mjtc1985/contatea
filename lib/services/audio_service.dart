@@ -1,21 +1,33 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter/foundation.dart';
 
 class AudioService {
   // Singleton para evitar múltiples instancias del reproductor
   static final AudioService _instance = AudioService._internal();
   factory AudioService() => _instance;
-  AudioService._internal();
+  AudioService._internal() {
+    _initTts();
+  }
 
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final FlutterTts _tts = FlutterTts();
   bool _initialized = false;
   bool _isMuted = false;
 
   bool get isMuted => _isMuted;
 
+  void _initTts() async {
+    await _tts.setLanguage("es-ES");
+    await _tts.setSpeechRate(0.5);
+    await _tts.setVolume(1.0);
+    await _tts.setPitch(1.0);
+  }
+
   void setMuted(bool value) {
     _isMuted = value;
     _audioPlayer.setVolume(_isMuted ? 0.0 : 1.0);
+    _tts.setVolume(_isMuted ? 0.0 : 1.0);
   }
 
   void toggleMute() {
@@ -28,6 +40,11 @@ class AudioService {
       await _audioPlayer.setVolume(_isMuted ? 0.0 : 1.0);
       _initialized = true;
     }
+  }
+
+  Future<void> speak(String text) async {
+    if (_isMuted) return;
+    await _tts.speak(text);
   }
 
   Future<void> playVictory() async => playApplause();

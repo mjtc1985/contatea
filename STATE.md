@@ -15,8 +15,8 @@
 ## Quick Tasks Completed
 | Task | Date | Status |
 | :--- | :--- | :--- |
-| Fix settings icon & ARASAAC Association | 2026-05-01 | complete ✓ |
 | UI Homogeneity & Randomization Fix | 2026-05-01 | complete ✓ |
+| TTS Feedback & Timing Optimization | 2026-05-01 | complete ✓ |
 | Fix Session Randomization (Bag Logic) | 2026-05-01 | complete ✓ |
 | UI Polish: Button Reset & Selection Grid | 2026-05-01 | complete ✓ |
 | Fix Association Game Latency | 2026-05-01 | complete ✓ |

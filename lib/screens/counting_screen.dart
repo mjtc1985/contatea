@@ -110,6 +110,7 @@ class _CountingScreenState extends State<CountingScreen> {
 
   void _handleCorrect() {
     setState(() => _currentRound++);
+    _audioService.speak('$_targetNumber'); // Lee el número en voz alta
     if (_currentRound < _totalRounds) {
       _audioService.playSuccess();
       _generateNewChallenge();

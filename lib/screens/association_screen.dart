@@ -27,6 +27,7 @@ class _AssociationScreenState extends State<AssociationScreen> {
   int _currentRound = 0;
   bool _isFinished = false;
   bool _showError = false;
+  bool _isProcessing = false;
   
   late AssociationPair _currentPair;
   late List<String> _options;
@@ -93,27 +94,33 @@ class _AssociationScreenState extends State<AssociationScreen> {
   }
 
   void _handleOptionSelected(String word) {
+    if (_isProcessing) return;
+
     if (word == _currentPair.word) {
-      _audioService.playSuccess();
-      // Forzar que el foco se pierda antes de pasar de ronda
-      FocusScope.of(context).unfocus();
+      _audioService.speak(_currentPair.word); // Lee la palabra en voz alta
       setState(() {
+        _isProcessing = true;
         _currentRound++;
       });
-      _nextRound();
-    } else {
-      _audioService.playError();
-      setState(() {
-        _showError = true;
-      });
-      Future.delayed(const Duration(milliseconds: 1000), () {
+      
+      // Esperar 1.5 segundos para que se oiga la palabra con la imagen en pantalla
+      Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) {
-          setState(() {
-            _showError = false;
-          });
+          setState(() => _isProcessing = false);
+          _nextRound();
         }
       });
+    } else {
+      _handleIncorrect();
     }
+  }
+
+  void _handleIncorrect() {
+    _audioService.playError();
+    setState(() => _showError = true);
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) setState(() => _showError = false);
+    });
   }
 
   @override
