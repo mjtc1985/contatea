@@ -9,11 +9,23 @@ class AudioService {
 
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _initialized = false;
+  bool _isMuted = false;
+
+  bool get isMuted => _isMuted;
+
+  void setMuted(bool value) {
+    _isMuted = value;
+    _audioPlayer.setVolume(_isMuted ? 0.0 : 1.0);
+  }
+
+  void toggleMute() {
+    setMuted(!_isMuted);
+  }
 
   Future<void> _ensureInitialized() async {
     if (!_initialized) {
       await _audioPlayer.setReleaseMode(ReleaseMode.stop);
-      await _audioPlayer.setVolume(1.0);
+      await _audioPlayer.setVolume(_isMuted ? 0.0 : 1.0);
       _initialized = true;
     }
   }

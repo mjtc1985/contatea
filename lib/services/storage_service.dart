@@ -5,7 +5,18 @@ import 'file_service.dart';
 
 class StorageService {
   static const String _key = 'contatea_levels';
+  static const String _muteKey = 'contatea_muted';
   final FileService _fileService = FileService();
+
+  Future<void> saveMuteState(bool isMuted) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_muteKey, isMuted);
+  }
+
+  Future<bool> loadMuteState() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_muteKey) ?? false;
+  }
 
   Future<void> saveLevels(List<GameLevel> levels) async {
     final prefs = await SharedPreferences.getInstance();

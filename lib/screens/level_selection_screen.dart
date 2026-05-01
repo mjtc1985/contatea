@@ -5,6 +5,8 @@ import 'package:contatea/screens/counting_screen.dart';
 import 'package:contatea/screens/settings_screen.dart';
 import 'package:contatea/services/storage_service.dart';
 
+import 'package:contatea/services/audio_service.dart';
+
 class LevelSelectionScreen extends StatefulWidget {
   const LevelSelectionScreen({super.key});
 
@@ -14,6 +16,7 @@ class LevelSelectionScreen extends StatefulWidget {
 
 class _LevelSelectionScreenState extends State<LevelSelectionScreen> {
   bool _isLoaded = false;
+  final AudioService _audioService = AudioService();
 
   @override
   void initState() {
@@ -23,11 +26,29 @@ class _LevelSelectionScreenState extends State<LevelSelectionScreen> {
 
   Future<void> _loadLevels() async {
     final storage = StorageService();
+    
+    // Cargar estado de silencio
+    final isMuted = await storage.loadMuteState();
+    _audioService.setMuted(isMuted);
+
     final savedLevels = await storage.loadLevels();
     if (savedLevels != null) {
       setState(() {
         levels.clear();
         levels.addAll(savedLevels);
+        
+        // Si falta el juego de asociación (por venir de una versión vieja), lo añadimos
+        if (levels.length < 2) {
+          levels.add(GameLevel(
+            title: 'Aprender Palabras', 
+            type: GameType.association,
+            pairs: [
+              AssociationPair(word: 'PERRO', imageUrl: 'https://static.arasaac.org/pictograms/2558/2558_300.png'),
+              AssociationPair(word: 'GATO', imageUrl: 'https://static.arasaac.org/pictograms/2560/2560_300.png'),
+              AssociationPair(word: 'POLLO', imageUrl: 'https://static.arasaac.org/pictograms/2565/2565_300.png'),
+            ],
+          ));
+        }
         
         // Corrección de desincronización histórica (CASA -> POLLO)
         for (var level in levels) {
@@ -72,8 +93,9 @@ class _LevelSelectionScreenState extends State<LevelSelectionScreen> {
               Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    const SizedBox(width: 48), // Espaciador para centrar el título
                     const Text(
                       'Contatea',
                       style: TextStyle(
@@ -82,6 +104,19 @@ class _LevelSelectionScreenState extends State<LevelSelectionScreen> {
                         color: Color(0xFF006064),
                         letterSpacing: 1.2,
                       ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        _audioService.isMuted ? Icons.volume_off : Icons.volume_up,
+                        color: const Color(0xFF006064),
+                        size: 32,
+                      ),
+                      onPressed: () async {
+                        setState(() {
+                          _audioService.toggleMute();
+                        });
+                        await StorageService().saveMuteState(_audioService.isMuted);
+                      },
                     ),
                   ],
                 ),

@@ -5,6 +5,7 @@ import 'package:confetti/confetti.dart';
 import '../models/level.dart';
 import '../services/arasaac_service.dart';
 import '../services/audio_service.dart';
+import '../services/storage_service.dart';
 
 class CountingScreen extends StatefulWidget {
   final GameLevel level;
@@ -190,6 +191,21 @@ class _CountingScreenState extends State<CountingScreen> {
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
+        actions: [
+          IconButton(
+            icon: Icon(
+              _audioService.isMuted ? Icons.volume_off : Icons.volume_up,
+              color: Colors.blueGrey,
+            ),
+            onPressed: () async {
+              setState(() {
+                _audioService.toggleMute();
+              });
+              await StorageService().saveMuteState(_audioService.isMuted);
+            },
+          ),
+          const SizedBox(width: 10),
+        ],
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -219,14 +235,12 @@ class _CountingScreenState extends State<CountingScreen> {
                             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
                           ),
                           child: Center(
-                            child: SingleChildScrollView(
-                              child: Wrap(
-                                spacing: 20,
-                                runSpacing: 20,
-                                alignment: WrapAlignment.center,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: List.generate(_targetNumber, (index) => 
-                                  _buildCountingItem(constraints),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(_targetNumber, (index) => 
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                                  child: _buildCountingItem(constraints),
                                 ),
                               ),
                             ),
@@ -274,8 +288,12 @@ class _CountingScreenState extends State<CountingScreen> {
   }
 
   Widget _buildCountingItem(BoxConstraints constraints) {
-    double size = (constraints.maxWidth - 60) / (_targetNumber <= 4 ? 2.2 : 3.5);
-    size = size.clamp(80.0, 200.0);
+    // Cálculo dinámico para que quepan todos en una fila sin scroll
+    double availableWidth = constraints.maxWidth - 100; // Margen de seguridad
+    double size = (availableWidth / _targetNumber) - 10; // Restar padding horizontal
+    
+    // Límites de tamaño razonables
+    size = size.clamp(40.0, 200.0);
     
     if (widget.level.selectedLocalImagePath != null && File(widget.level.selectedLocalImagePath!).existsSync()) {
       return ClipRRect(

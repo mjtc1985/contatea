@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:contatea/models/level.dart';
 import 'package:contatea/services/audio_service.dart';
+import 'package:contatea/services/storage_service.dart';
 import 'dart:io';
 import 'dart:math';
 import 'package:confetti/confetti.dart';
@@ -124,21 +125,24 @@ class _AssociationScreenState extends State<AssociationScreen> {
       body: Stack(
         children: [
           SafeArea(
-            child: Column(
-              children: [
-                _buildHeader(),
-                _buildProgress(),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildImage(),
-                      const SizedBox(height: 50),
-                      _buildOptions(),
-                    ],
-                  ),
-                ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Column(
+                  children: [
+                    _buildHeader(),
+                    _buildProgress(),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildImage(constraints),
+                          _buildOptions(constraints),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }
             ),
           ),
           if (_showError)
@@ -171,25 +175,40 @@ class _AssociationScreenState extends State<AssociationScreen> {
               color: Colors.blue[800],
             ),
           ),
-          const SizedBox(width: 48),
+          IconButton(
+            icon: Icon(
+              _audioService.isMuted ? Icons.volume_off : Icons.volume_up,
+              color: Colors.black87,
+              size: 32,
+            ),
+            onPressed: () async {
+              setState(() {
+                _audioService.toggleMute();
+              });
+              await StorageService().saveMuteState(_audioService.isMuted);
+            },
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildImage() {
+  Widget _buildImage(BoxConstraints constraints) {
+    // Calcular tamaño de imagen dinámico (aprox 40% del alto disponible)
+    double size = (constraints.maxHeight * 0.4).clamp(150.0, 300.0);
+
     Widget image;
     if (_localFileExists) {
       image = Image.file(File(_currentPair.localImagePath!), fit: BoxFit.contain);
     } else if (_currentPair.imageUrl != null) {
       image = Image.network(_currentPair.imageUrl!, fit: BoxFit.contain);
     } else {
-      image = const Icon(Icons.image, size: 200);
+      image = Icon(Icons.image, size: size * 0.6);
     }
 
     return Container(
-      width: 300,
-      height: 300,
+      width: size,
+      height: size,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -206,7 +225,11 @@ class _AssociationScreenState extends State<AssociationScreen> {
     );
   }
 
-  Widget _buildOptions() {
+  Widget _buildOptions(BoxConstraints constraints) {
+    // Ajustar padding según el alto disponible
+    double verticalPadding = (constraints.maxHeight * 0.03).clamp(10.0, 25.0);
+    double fontSize = (constraints.maxHeight * 0.04).clamp(20.0, 32.0);
+
     return Wrap(
       key: ValueKey('options_round_$_currentRound'),
       spacing: 20,
@@ -219,8 +242,8 @@ class _AssociationScreenState extends State<AssociationScreen> {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.white,
             foregroundColor: Colors.blue[900],
-            overlayColor: Colors.transparent, // Elimina el sombreado gris tras el clic
-            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 25),
+            overlayColor: Colors.transparent, 
+            padding: EdgeInsets.symmetric(horizontal: 40, vertical: verticalPadding),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -229,7 +252,7 @@ class _AssociationScreenState extends State<AssociationScreen> {
           onPressed: () => _handleOptionSelected(option),
           child: Text(
             option,
-            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold),
           ),
         );
       }).toList(),
